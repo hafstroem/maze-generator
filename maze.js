@@ -2,29 +2,12 @@
 
 console.log('Starting up Maze');
 
-let imgCell = {};
-let imgCellN = {};
-let imgCellE = {};
-let imgCellS = {};
-let imgCellW = {};
-let imgCellNE = {};
-let imgCellNS = {};
-let imgCellNW = {};
-let imgCellES = {};
-let imgCellEW = {};
-let imgCellSW = {};
-let imgCellNES = {};
-let imgCellESW = {};
-let imgCellSWN = {};
-let imgCellWNE = {};
-let imgCellNESW = {};
-
 let images = [];
 
-let cellSize = 25;
-let wallSize = 2;
-let columns = 15;
-let rows = 10;
+let cellSize = 10;
+let wallSize = 1;
+let columns = 100;
+let rows = 60;
 
 let myGrid = new Grid(columns, rows);
 
@@ -219,53 +202,42 @@ Grid.prototype.getCandidatePaths = function(x, y) {
   }
   return result;
 };
-// ############################################################################
-/**
- * Build image cell with walls on all sides: north, east, south and west
- * @param {number} cellSize height and width in pixels of a cell.
- * @param {number} wallSize thickness of wall in each cell
- * @return {object} imgageData
- */
-function buildImageCellNESW(cellSize, wallSize) {
-  let canvas = document.getElementById('myCanvas');
-  let ctx = canvas.getContext('2d');
-  // create cell with walls on all sides.
-  let result = ctx.createImageData(cellSize, cellSize);
-  // fill black
-  for (let i=0; i<result.data.length; i+=4) {
-    result.data[i+0]=0;
-    result.data[i+1]=0;
-    result.data[i+2]=0;
-    result.data[i+3]=255;
-  }
-  // fill white in the middle
-  for (let i=0+wallSize; i<cellSize-wallSize; i++ ) {
-    for (let j=0+wallSize; j<cellSize-wallSize; j++ ) {
-      result.data[(i*cellSize*4) + (j*4)]=255;
-      result.data[(i*cellSize*4) + (j*4) + 1]=255;
-      result.data[(i*cellSize*4) + (j*4) + 2]=255;
-      result.data[(i*cellSize*4) + (j*4) + 3]=255;
-    }
-  }
-  return result;
-}
 // ----------------------------------------------------------------------------
 /**
- * Build image for cell with no walls.
- * @param {number} cellSize height and width in pixels of a cell.
- * @param {number} wallSize thickness of wall in each cell
+ * Builds images to be used in the grid.
+ * @param {number} cellSize size (pixels) of cell. both width and height
+ * @param {number} wallSize thickness of wall in cell in pixels
+ * @param {number} type denotes the type of cell to build. This is a number
+ * that in binary representation describes which walls to set and if cell is
+ * visited. Like this:
+ *  bit 1 - north wall set
+ *  bit 2 - east wall set
+ *  bit 3 - south wall set
+ *  bit 4 - west wall set
+ *  bit 5 - cell is visited
+ * So value of 21 means a cell with north and south walls set and is visited.
+ * Read up on binary numbers if you find this confusing
  * @return {object} imgageData
-*/
-function buildImageCell(cellSize, wallSize) {
+ */
+function buildImgCell(cellSize, wallSize, type) {
+  // find background color based on visited or not - default to white
+  let backRed = 190;
+  let backGreen = 190;
+  let backBlue = 255;
+  if ((type & 16) == 16) {
+    // if the cell is visited, use white as background
+    backRed = 255;
+    backGreen = 255;
+    backBlue = 255;
+  }
   let canvas = document.getElementById('myCanvas');
   let ctx = canvas.getContext('2d');
-  // create cell with walls on all sides.
   let result = ctx.createImageData(cellSize, cellSize);
   // fill white
   for (let i=0; i<result.data.length; i+=4) {
-    result.data[i+0]=255;
-    result.data[i+1]=255;
-    result.data[i+2]=255;
+    result.data[i+0]=backRed;
+    result.data[i+1]=backGreen;
+    result.data[i+2]=backBlue;
     result.data[i+3]=255;
   }
   let k = cellSize-wallSize; // will be used a lot below
@@ -294,675 +266,47 @@ function buildImageCell(cellSize, wallSize) {
       result.data[((i+k)*cellSize*4)+((j+k)*4)+3]=255;
     }
   }
-  return result;
-}
-// ----------------------------------------------------------------------------
-/**
- * Build image cell with walls on north side
- * @param {number} cellSize height and width in pixels of a cell.
- * @param {number} wallSize thickness of wall in each cell
- * @return {object} imgageData
- */
-function buildImageCellN(cellSize, wallSize) {
-  let canvas = document.getElementById('myCanvas');
-  let ctx = canvas.getContext('2d');
-  // create cell with walls on all sides.
-  let result = ctx.createImageData(cellSize, cellSize);
-  // fill white
-  for (let i=0; i<result.data.length; i+=4) {
-    result.data[i+0]=255;
-    result.data[i+1]=255;
-    result.data[i+2]=255;
-    result.data[i+3]=255;
-  }
-  let k = cellSize-wallSize; // will be used a lot below
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      // Lower left corner
-      result.data[((i+k)*cellSize*4)+(j*4)]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+1]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+2]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+3]=255;
-      // Lower right corner
-      result.data[((i+k)*cellSize*4)+((j+k)*4)]=0;
-      result.data[((i+k)*cellSize*4)+((j+k)*4)+1]=0;
-      result.data[((i+k)*cellSize*4)+((j+k)*4)+2]=0;
-      result.data[((i+k)*cellSize*4)+((j+k)*4)+3]=255;
+  if ((type & 1) == 1) { // do north wall
+    for (let i=0; i<wallSize; i++ ) {
+      for (let j=0; j<cellSize; j++ ) {
+        result.data[(i*cellSize*4)+(j*4)]=0;
+        result.data[(i*cellSize*4)+(j*4)+1]=0;
+        result.data[(i*cellSize*4)+(j*4)+2]=0;
+        result.data[(i*cellSize*4)+(j*4)+3]=255;
+      }
     }
   }
-  // north wall
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<cellSize; j++ ) {
-      result.data[(i*cellSize*4)+(j*4)]=0;
-      result.data[(i*cellSize*4)+(j*4)+1]=0;
-      result.data[(i*cellSize*4)+(j*4)+2]=0;
-      result.data[(i*cellSize*4)+(j*4)+3]=255;
+  if ((type & 2) == 2) { // do east wall
+    for (let i=0; i<cellSize; i++ ) {
+      for (let j=0; j<wallSize; j++ ) {
+        result.data[((i)*cellSize*4)+((j+k)*4)]=0;
+        result.data[((i)*cellSize*4)+((j+k)*4)+1]=0;
+        result.data[((i)*cellSize*4)+((j+k)*4)+2]=0;
+        result.data[((i)*cellSize*4)+((j+k)*4)+3]=255;
+      }
+    }
+  }
+  if ((type & 4) == 4) { // do south wall
+    for (let i=0; i<wallSize; i++ ) {
+      for (let j=0; j<cellSize; j++ ) {
+        result.data[((i+k)*cellSize*4)+(j*4)]=0;
+        result.data[((i+k)*cellSize*4)+(j*4)+1]=0;
+        result.data[((i+k)*cellSize*4)+(j*4)+2]=0;
+        result.data[((i+k)*cellSize*4)+(j*4)+3]=255;
+      }
+    }
+  }
+  if ((type & 8) == 8) { // do west wall
+    for (let i=0; i<cellSize; i++ ) {
+      for (let j=0; j<wallSize; j++ ) {
+        result.data[((i)*cellSize*4)+((j)*4)]=0;
+        result.data[((i)*cellSize*4)+((j)*4)+1]=0;
+        result.data[((i)*cellSize*4)+((j)*4)+2]=0;
+        result.data[((i)*cellSize*4)+((j)*4)+3]=255;
+      }
     }
   }
   return result;
-}
-// ----------------------------------------------------------------------------
-/**
- * Build image cell with wall on East side
- * @param {number} cellSize height and width in pixels of a cell.
- * @param {number} wallSize thickness of wall in each cell
- * @return {object} imgageData
- */
-function buildImageCellE(cellSize, wallSize) {
-  let canvas = document.getElementById('myCanvas');
-  let ctx = canvas.getContext('2d');
-  // create cell with walls on all sides.
-  let result = ctx.createImageData(cellSize, cellSize);
-  // fill white
-  for (let i=0; i<result.data.length; i+=4) {
-    result.data[i+0]=255;
-    result.data[i+1]=255;
-    result.data[i+2]=255;
-    result.data[i+3]=255;
-  }
-  let k = cellSize-wallSize; // will be used a lot below
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      // left top corner
-      result.data[(i*cellSize*4) + (j*4)]=0;
-      result.data[(i*cellSize*4) + (j*4)+1]=0;
-      result.data[(i*cellSize*4) + (j*4)+2]=0;
-      result.data[(i*cellSize*4) + (j*4)+3]=255;
-      // Lower left corner
-      result.data[((i+k)*cellSize*4)+(j*4)]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+1]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+2]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+3]=255;
-    }
-  }
-  for (let i=0; i<cellSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      // east wall - needs work
-      result.data[((i)*cellSize*4)+((j+k)*4)]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+1]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+2]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+3]=255;
-    }
-  }
-  return result;
-}
-// ----------------------------------------------------------------------------
-/**
- * Build image cell with wall on south side
- * @param {number} cellSize height and width in pixels of a cell.
- * @param {number} wallSize thickness of wall in each cell
- * @return {object} imgageData
- */
-function buildImageCellS(cellSize, wallSize) {
-  let canvas = document.getElementById('myCanvas');
-  let ctx = canvas.getContext('2d');
-  // create cell with walls on all sides.
-  let result = ctx.createImageData(cellSize, cellSize);
-  // fill white
-  for (let i=0; i<result.data.length; i+=4) {
-    result.data[i+0]=255;
-    result.data[i+1]=255;
-    result.data[i+2]=255;
-    result.data[i+3]=255;
-  }
-  let k = cellSize-wallSize; // will be used a lot below
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      // left top corner
-      result.data[(i*cellSize*4) + (j*4)]=0;
-      result.data[(i*cellSize*4) + (j*4)+1]=0;
-      result.data[(i*cellSize*4) + (j*4)+2]=0;
-      result.data[(i*cellSize*4) + (j*4)+3]=255;
-      // Right top corner
-      result.data[(i*cellSize*4) + ((j+k)*4)]=0;
-      result.data[(i*cellSize*4) + ((j+k)*4+1)]=0;
-      result.data[(i*cellSize*4) + ((j+k)*4+2)]=0;
-      result.data[(i*cellSize*4) + ((j+k)*4+3)]=255;
-    }
-  }
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<cellSize; j++ ) {
-      // south wall - needs work
-      result.data[((i+k)*cellSize*4)+(j*4)]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+1]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+2]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+3]=255;
-    }
-  }
-  return result;
-}
-// ----------------------------------------------------------------------------
-/**
- * Build image cell with wall on East side
- * @param {number} cellSize height and width in pixels of a cell.
- * @param {number} wallSize thickness of wall in each cell
- * @return {object} imgageData
- */
-function buildImageCellW(cellSize, wallSize) {
-  let canvas = document.getElementById('myCanvas');
-  let ctx = canvas.getContext('2d');
-  // create cell with walls on all sides.
-  let result = ctx.createImageData(cellSize, cellSize);
-  // fill white
-  for (let i=0; i<result.data.length; i+=4) {
-    result.data[i+0]=255;
-    result.data[i+1]=255;
-    result.data[i+2]=255;
-    result.data[i+3]=255;
-  }
-  let k = cellSize-wallSize; // will be used a lot below
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      // Right top corner
-      result.data[(i*cellSize*4) + ((j+k)*4)]=0;
-      result.data[(i*cellSize*4) + ((j+k)*4+1)]=0;
-      result.data[(i*cellSize*4) + ((j+k)*4+2)]=0;
-      result.data[(i*cellSize*4) + ((j+k)*4+3)]=255;
-      // Lower right corner
-      result.data[((i+k)*cellSize*4)+((j+k)*4)]=0;
-      result.data[((i+k)*cellSize*4)+((j+k)*4)+1]=0;
-      result.data[((i+k)*cellSize*4)+((j+k)*4)+2]=0;
-      result.data[((i+k)*cellSize*4)+((j+k)*4)+3]=255;
-    }
-  }
-  for (let i=0; i<cellSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      // west wall - needs work
-      result.data[((i)*cellSize*4)+((j)*4)]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+1]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+2]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+3]=255;
-    }
-  }
-  return result;
-}
-// ----------------------------------------------------------------------------
-/**
- * Build image cell with walls on north and east side
- * @param {number} cellSize height and width in pixels of a cell.
- * @param {number} wallSize thickness of wall in each cell
- * @return {object} imgageData
- */
-function buildImageCellNE(cellSize, wallSize) {
-  let canvas = document.getElementById('myCanvas');
-  let ctx = canvas.getContext('2d');
-  // create cell with walls on all sides.
-  let result = ctx.createImageData(cellSize, cellSize);
-  // fill white
-  for (let i=0; i<result.data.length; i+=4) {
-    result.data[i+0]=255;
-    result.data[i+1]=255;
-    result.data[i+2]=255;
-    result.data[i+3]=255;
-  }
-  let k = cellSize-wallSize; // will be used a lot below
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      // Lower left corner
-      result.data[((i+k)*cellSize*4)+(j*4)]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+1]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+2]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+3]=255;
-    }
-  }
-  // north wall
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<cellSize; j++ ) {
-      result.data[(i*cellSize*4)+(j*4)]=0;
-      result.data[(i*cellSize*4)+(j*4)+1]=0;
-      result.data[(i*cellSize*4)+(j*4)+2]=0;
-      result.data[(i*cellSize*4)+(j*4)+3]=255;
-    }
-  }
-  // east wall
-  for (let i=0; i<cellSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      // east wall
-      result.data[((i)*cellSize*4)+((j+k)*4)]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+1]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+2]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+3]=255;
-    }
-  }
-  return result;
-}
-// ----------------------------------------------------------------------------
-/**
- * Build image cell with walls on north and south side
- * @param {number} cellSize height and width in pixels of a cell.
- * @param {number} wallSize thickness of wall in each cell
- * @return {object} imgageData
- */
-function buildImageCellNS(cellSize, wallSize) {
-  let canvas = document.getElementById('myCanvas');
-  let ctx = canvas.getContext('2d');
-  // create cell with walls on all sides.
-  let result = ctx.createImageData(cellSize, cellSize);
-  // fill white
-  for (let i=0; i<result.data.length; i+=4) {
-    result.data[i+0]=255;
-    result.data[i+1]=255;
-    result.data[i+2]=255;
-    result.data[i+3]=255;
-  }
-  let k = cellSize-wallSize; // will be used a lot below
-  // north wall
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<cellSize; j++ ) {
-      result.data[(i*cellSize*4)+(j*4)]=0;
-      result.data[(i*cellSize*4)+(j*4)+1]=0;
-      result.data[(i*cellSize*4)+(j*4)+2]=0;
-      result.data[(i*cellSize*4)+(j*4)+3]=255;
-    }
-  }
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<cellSize; j++ ) {
-      // south wall
-      result.data[((i+k)*cellSize*4)+(j*4)]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+1]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+2]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+3]=255;
-    }
-  }
-  return result;
-}
-// ----------------------------------------------------------------------------
-/**
- * Build image cell with walls on north and west side
- * @param {number} cellSize height and width in pixels of a cell.
- * @param {number} wallSize thickness of wall in each cell
- * @return {object} imgageData
- */
-function buildImageCellNW(cellSize, wallSize) {
-  let canvas = document.getElementById('myCanvas');
-  let ctx = canvas.getContext('2d');
-  // create cell with walls on all sides.
-  let result = ctx.createImageData(cellSize, cellSize);
-  // fill white
-  for (let i=0; i<result.data.length; i+=4) {
-    result.data[i+0]=255;
-    result.data[i+1]=255;
-    result.data[i+2]=255;
-    result.data[i+3]=255;
-  }
-  let k = cellSize-wallSize; // will be used a lot below
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      // Lower right corner
-      result.data[((i+k)*cellSize*4)+((j+k)*4)]=0;
-      result.data[((i+k)*cellSize*4)+((j+k)*4)+1]=0;
-      result.data[((i+k)*cellSize*4)+((j+k)*4)+2]=0;
-      result.data[((i+k)*cellSize*4)+((j+k)*4)+3]=255;
-    }
-  }
-  // north wall
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<cellSize; j++ ) {
-      result.data[(i*cellSize*4)+(j*4)]=0;
-      result.data[(i*cellSize*4)+(j*4)+1]=0;
-      result.data[(i*cellSize*4)+(j*4)+2]=0;
-      result.data[(i*cellSize*4)+(j*4)+3]=255;
-    }
-  }
-  // west wall
-  for (let i=0; i<cellSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      result.data[((i)*cellSize*4)+((j)*4)]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+1]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+2]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+3]=255;
-    }
-  }
-  return result;
-}
-// ----------------------------------------------------------------------------
-/**
- * Build image cell with walls on  and south side
- * @param {number} cellSize height and width in pixels of a cell.
- * @param {number} wallSize thickness of wall in each cell
- * @return {object} imgageData
- */
-function buildImageCellES(cellSize, wallSize) {
-  let canvas = document.getElementById('myCanvas');
-  let ctx = canvas.getContext('2d');
-  let result = ctx.createImageData(cellSize, cellSize);
-  // fill white
-  for (let i=0; i<result.data.length; i+=4) {
-    result.data[i+0]=255;
-    result.data[i+1]=255;
-    result.data[i+2]=255;
-    result.data[i+3]=255;
-  }
-  let k = cellSize-wallSize; // will be used a lot below
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      // left top corner
-      result.data[(i*cellSize*4) + (j*4)]=0;
-      result.data[(i*cellSize*4) + (j*4)+1]=0;
-      result.data[(i*cellSize*4) + (j*4)+2]=0;
-      result.data[(i*cellSize*4) + (j*4)+3]=255;
-    }
-  }
-  // east wall
-  for (let i=0; i<cellSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      // east wall
-      result.data[((i)*cellSize*4)+((j+k)*4)]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+1]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+2]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+3]=255;
-    }
-  }
-  // south wall
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<cellSize; j++ ) {
-      result.data[((i+k)*cellSize*4)+(j*4)]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+1]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+2]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+3]=255;
-    }
-  }
-  return result;
-}
-// ----------------------------------------------------------------------------
-/**
- * Build image cell with walls on east and west side
- * @param {number} cellSize height and width in pixels of a cell.
- * @param {number} wallSize thickness of wall in each cell
- * @return {object} imgageData
- */
-function buildImageCellEW(cellSize, wallSize) {
-  let canvas = document.getElementById('myCanvas');
-  let ctx = canvas.getContext('2d');
-  let result = ctx.createImageData(cellSize, cellSize);
-  // fill white
-  for (let i=0; i<result.data.length; i+=4) {
-    result.data[i+0]=255;
-    result.data[i+1]=255;
-    result.data[i+2]=255;
-    result.data[i+3]=255;
-  }
-  let k = cellSize-wallSize; // will be used a lot below
-  // east wall
-  for (let i=0; i<cellSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      result.data[((i)*cellSize*4)+((j+k)*4)]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+1]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+2]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+3]=255;
-    }
-  }
-  // west wall
-  for (let i=0; i<cellSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      result.data[((i)*cellSize*4)+((j)*4)]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+1]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+2]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+3]=255;
-    }
-  }
-  return result;
-}
-// ----------------------------------------------------------------------------
-/**
- * Build image cell with walls on south and west side
- * @param {number} cellSize height and width in pixels of a cell.
- * @param {number} wallSize thickness of wall in each cell
- * @return {object} imgageData
- */
-function buildImageCellSW(cellSize, wallSize) {
-  let canvas = document.getElementById('myCanvas');
-  let ctx = canvas.getContext('2d');
-  let result = ctx.createImageData(cellSize, cellSize);
-  // fill white
-  for (let i=0; i<result.data.length; i+=4) {
-    result.data[i+0]=255;
-    result.data[i+1]=255;
-    result.data[i+2]=255;
-    result.data[i+3]=255;
-  }
-  let k = cellSize-wallSize; // will be used a lot below
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      // Right top corner
-      result.data[(i*cellSize*4) + ((j+k)*4)]=0;
-      result.data[(i*cellSize*4) + ((j+k)*4+1)]=0;
-      result.data[(i*cellSize*4) + ((j+k)*4+2)]=0;
-      result.data[(i*cellSize*4) + ((j+k)*4+3)]=255;
-    }
-  }
-  // south wall
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<cellSize; j++ ) {
-      result.data[((i+k)*cellSize*4)+(j*4)]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+1]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+2]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+3]=255;
-    }
-  }
-  // west wall
-  for (let i=0; i<cellSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      result.data[((i)*cellSize*4)+((j)*4)]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+1]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+2]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+3]=255;
-    }
-  }
-  return result;
-}
-// ----------------------------------------------------------------------------
-/**
- * Build image cell with walls on north, east, and south sides
- * @param {number} cellSize height and width in pixels of a cell.
- * @param {number} wallSize thickness of wall in each cell
- * @return {object} imgageData
- */
-function buildImageCellNES(cellSize, wallSize) {
-  let canvas = document.getElementById('myCanvas');
-  let ctx = canvas.getContext('2d');
-  let result = ctx.createImageData(cellSize, cellSize);
-  // fill white
-  for (let i=0; i<result.data.length; i+=4) {
-    result.data[i+0]=255;
-    result.data[i+1]=255;
-    result.data[i+2]=255;
-    result.data[i+3]=255;
-  }
-  let k = cellSize-wallSize; // will be used a lot below
-  // north wall
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<cellSize; j++ ) {
-      result.data[(i*cellSize*4)+(j*4)]=0;
-      result.data[(i*cellSize*4)+(j*4)+1]=0;
-      result.data[(i*cellSize*4)+(j*4)+2]=0;
-      result.data[(i*cellSize*4)+(j*4)+3]=255;
-    }
-  }
-  // east wall
-  for (let i=0; i<cellSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      result.data[((i)*cellSize*4)+((j+k)*4)]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+1]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+2]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+3]=255;
-    }
-  }
-  // south wall
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<cellSize; j++ ) {
-      result.data[((i+k)*cellSize*4)+(j*4)]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+1]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+2]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+3]=255;
-    }
-  }
-  return result;
-}
-// ----------------------------------------------------------------------------
-/**
- * Build image cell with walls on east, south and west sides
- * @param {number} cellSize height and width in pixels of a cell.
- * @param {number} wallSize thickness of wall in each cell
- * @return {object} imgageData
- */
-function buildImageCellESW(cellSize, wallSize) {
-  let canvas = document.getElementById('myCanvas');
-  let ctx = canvas.getContext('2d');
-  let result = ctx.createImageData(cellSize, cellSize);
-  // fill white
-  for (let i=0; i<result.data.length; i+=4) {
-    result.data[i+0]=255;
-    result.data[i+1]=255;
-    result.data[i+2]=255;
-    result.data[i+3]=255;
-  }
-  let k = cellSize-wallSize; // will be used a lot below
-  // east wall
-  for (let i=0; i<cellSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      result.data[((i)*cellSize*4)+((j+k)*4)]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+1]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+2]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+3]=255;
-    }
-  }
-  // south wall
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<cellSize; j++ ) {
-      result.data[((i+k)*cellSize*4)+(j*4)]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+1]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+2]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+3]=255;
-    }
-  }
-  // west wall
-  for (let i=0; i<cellSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      result.data[((i)*cellSize*4)+((j)*4)]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+1]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+2]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+3]=255;
-    }
-  }
-  return result;
-}
-// ----------------------------------------------------------------------------
-/**
- * Build image cell with walls on south, west and north sides
- * @param {number} cellSize height and width in pixels of a cell.
- * @param {number} wallSize thickness of wall in each cell
- * @return {object} imgageData
- */
-function buildImageCellSWN(cellSize, wallSize) {
-  let canvas = document.getElementById('myCanvas');
-  let ctx = canvas.getContext('2d');
-  let result = ctx.createImageData(cellSize, cellSize);
-  // fill white
-  for (let i=0; i<result.data.length; i+=4) {
-    result.data[i+0]=255;
-    result.data[i+1]=255;
-    result.data[i+2]=255;
-    result.data[i+3]=255;
-  }
-  let k = cellSize-wallSize; // will be used a lot below
-  // south wall
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<cellSize; j++ ) {
-      result.data[((i+k)*cellSize*4)+(j*4)]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+1]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+2]=0;
-      result.data[((i+k)*cellSize*4)+(j*4)+3]=255;
-    }
-  }
-  // west wall
-  for (let i=0; i<cellSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      result.data[((i)*cellSize*4)+((j)*4)]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+1]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+2]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+3]=255;
-    }
-  }
-  // north wall
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<cellSize; j++ ) {
-      result.data[(i*cellSize*4)+(j*4)]=0;
-      result.data[(i*cellSize*4)+(j*4)+1]=0;
-      result.data[(i*cellSize*4)+(j*4)+2]=0;
-      result.data[(i*cellSize*4)+(j*4)+3]=255;
-    }
-  }
-  return result;
-}
-// ----------------------------------------------------------------------------
-/**
- * Build image cell with walls on west, north and east sides
- * @param {number} cellSize height and width in pixels of a cell.
- * @param {number} wallSize thickness of wall in each cell
- * @return {object} imgageData
- */
-function buildImageCellWNE(cellSize, wallSize) {
-  let canvas = document.getElementById('myCanvas');
-  let ctx = canvas.getContext('2d');
-  let result = ctx.createImageData(cellSize, cellSize);
-  // fill white
-  for (let i=0; i<result.data.length; i+=4) {
-    result.data[i+0]=255;
-    result.data[i+1]=255;
-    result.data[i+2]=255;
-    result.data[i+3]=255;
-  }
-  let k = cellSize-wallSize; // will be used a lot below
-  // west wall
-  for (let i=0; i<cellSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      result.data[((i)*cellSize*4)+((j)*4)]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+1]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+2]=0;
-      result.data[((i)*cellSize*4)+((j)*4)+3]=255;
-    }
-  }
-  // north wall
-  for (let i=0; i<wallSize; i++ ) {
-    for (let j=0; j<cellSize; j++ ) {
-      result.data[(i*cellSize*4)+(j*4)]=0;
-      result.data[(i*cellSize*4)+(j*4)+1]=0;
-      result.data[(i*cellSize*4)+(j*4)+2]=0;
-      result.data[(i*cellSize*4)+(j*4)+3]=255;
-    }
-  }
-  // east wall
-  for (let i=0; i<cellSize; i++ ) {
-    for (let j=0; j<wallSize; j++ ) {
-      result.data[((i)*cellSize*4)+((j+k)*4)]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+1]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+2]=0;
-      result.data[((i)*cellSize*4)+((j+k)*4)+3]=255;
-    }
-  }
-  return result;
-}
-// ----------------------------------------------------------------------------
-/**
- * Builds images to be used in the grid.
- * @param {*} cellSize size (pixels) of cell. both width and height
- * @param {*} wallSize thickness of wall in cell in pixels
- * @param {*} type denotes the type of cell to build. This is a number that in
- * binary representation describes which walls to set and if cell is visited.
- * Like this:
- *  bit 1 - north wall set
- *  bit 2 - east wall set
- *  bit 3 - south wall set
- *  bit 4 - west wall set
- *  bit 5 - cell is visited
- * So value of 21 means a cell with north and south walls set and is visited.
- * Read up on binary numbers if you find this confusing
- */
-function buildImgCell(cellSize, wallSize, type) { 
-  // find background color based on visited or not
-  // create cell with 4 corners.
-  // 
 }
 // ----------------------------------------------------------------------------
 /**
@@ -972,38 +316,9 @@ function buildImgCell(cellSize, wallSize, type) {
 */
 function buildAllImages(cellSize, wallSize) {
   console.log('building all images...');
-  imgCell = buildImageCell(cellSize, wallSize);
-  imgCellN = buildImageCellN(cellSize, wallSize);
-  imgCellE = buildImageCellE(cellSize, wallSize);
-  imgCellS = buildImageCellS(cellSize, wallSize);
-  imgCellW = buildImageCellW(cellSize, wallSize);
-  imgCellNE = buildImageCellNE(cellSize, wallSize);
-  imgCellNS = buildImageCellNS(cellSize, wallSize);
-  imgCellNW = buildImageCellNW(cellSize, wallSize);
-  imgCellES = buildImageCellES(cellSize, wallSize);
-  imgCellEW = buildImageCellEW(cellSize, wallSize);
-  imgCellSW = buildImageCellSW(cellSize, wallSize);
-  imgCellNES = buildImageCellNES(cellSize, wallSize);
-  imgCellESW = buildImageCellESW(cellSize, wallSize);
-  imgCellSWN = buildImageCellSWN(cellSize, wallSize);
-  imgCellWNE = buildImageCellWNE(cellSize, wallSize);
-  imgCellNESW = buildImageCellNESW(cellSize, wallSize);
-  images.push(imgCell);
-  images.push(imgCellN);
-  images.push(imgCellE);
-  images.push(imgCellNE);
-  images.push(imgCellS);
-  images.push(imgCellNS);
-  images.push(imgCellES);
-  images.push(imgCellNES);
-  images.push(imgCellW);
-  images.push(imgCellNW);
-  images.push(imgCellEW);
-  images.push(imgCellWNE);
-  images.push(imgCellSW);
-  images.push(imgCellSWN);
-  images.push(imgCellESW);
-  images.push(imgCellNESW);
+  for (let i=0; i<32; i++) {
+    images.push(buildImgCell(cellSize, wallSize, i));
+  }
 }
 // ----------------------------------------------------------------------------
 /**
@@ -1030,68 +345,16 @@ function drawCell(x, y) {
   let canvas = document.getElementById('myCanvas');
   let ctx = canvas.getContext('2d');
   // buildAllImages(cellSize, wallSize);
-  let idx = (myGrid.cell[x][y].value & 15);
+  let idx = (myGrid.cell[x][y].value);
   ctx.putImageData(images[idx], 10+(x*cellSize), 10+(y*cellSize));
 };
 // ----------------------------------------------------------------------------
-/*
-  ctx.putImageData(images[0], 10, 10);
-  ctx.putImageData(images[1], 60, 10);
-  ctx.putImageData(images[2], 110, 10);
-  ctx.putImageData(images[3], 160, 10);
-  ctx.putImageData(images[4], 10, 60);
-  ctx.putImageData(images[5], 60, 60);
-  ctx.putImageData(images[6], 110, 60);
-  ctx.putImageData(images[7], 160, 60);
-  ctx.putImageData(images[8], 10, 110);
-  ctx.putImageData(images[9], 60, 110);
-  ctx.putImageData(images[10], 110, 110);
-  ctx.putImageData(images[11], 160, 110);
-  ctx.putImageData(images[12], 10, 160);
-  ctx.putImageData(images[13], 60, 160);
-  ctx.putImageData(images[14], 110, 160);
-  ctx.putImageData(images[15], 160, 160);
-  */
 // ############################################################################
 /**
  * To be called when page loads.
 */
 function onBodyLoad() { // eslint-disable-line no-unused-vars
-  // open a small path
-  /*
-  myGrid.cell[0][0].setWallEast(false);
-  myGrid.cell[0][0].setWallSouth(false);
-
-  myGrid.cell[1][0].setWallWest(false);
-  myGrid.cell[1][0].setWallEast(false);
-
-  myGrid.cell[2][0].setWallWest(false);
-
-  myGrid.cell[0][1].setWallNorth(false);
-  myGrid.cell[0][1].setWallSouth(false);
-
-  myGrid.cell[0][2].setWallNorth(false);
-  myGrid.cell[0][2].setWallEast(false);
-
-  myGrid.cell[1][2].setWallWest(false);
-  myGrid.cell[1][2].setWallNorth(false);
-
-  myGrid.cell[1][1].setWallSouth(false);
-  myGrid.cell[1][1].setWallEast(false);
-
-  myGrid.cell[2][1].setWallWest(false);
-  myGrid.cell[2][1].setWallSouth(false);
-
-  myGrid.cell[2][2].setWallNorth(false);
-  */
-  // myGrid.cell[0][0].visited = true;
-  // console.log('North wall of top left cell: ' + myGrid.cell[0][0].wallNorth);
-  // console.log(myGrid.toString());
-  // console.log('Here is a unicode char: \u2501');
-  // let paths = myGrid.getCandidatePaths(1, 1);
-  // console.log(JSON.stringify(paths));
   buildAllImages(cellSize, wallSize);
-
   drawGrid();
 };
 // ----------------------------------------------------------------------------
@@ -1119,6 +382,7 @@ function moveTo(x, y) {
   // console.log('possible paths: ' + JSON.stringify(paths));
   if (paths.length == 0) {
     // handle dead end - pop from stack.
+    drawCell(x, y); // redraw now that it is marked as visited
     let returnCell = stack.pop();
     console.log('going back to: (' + returnCell.x + ', ' + returnCell.y + ')');
     nextX = returnCell.x;
@@ -1174,7 +438,6 @@ function moveTo(x, y) {
       drawCell(x-1, y);
     }
   }
-  // drawGrid();
 }
 // ----------------------------------------------------------------------------
 /**
