@@ -21,12 +21,21 @@ let imgCellNESW = {};
 
 let images = [];
 
-let cellSize = 30;
+let cellSize = 25;
 let wallSize = 2;
 let columns = 15;
 let rows = 10;
 
 let myGrid = new Grid(columns, rows);
+
+// let currentX = 0;
+// let currentY = 0;
+let nextX = 0;
+let nextY = 0;
+
+let stack = [];
+
+let timerId = 0;
 
 // ############################################################################
 /**
@@ -53,6 +62,10 @@ Cell.prototype.getWallSouth = function() {
 // -----------------------------------------------------------------------------
 Cell.prototype.getWallWest = function() {
   return (this.value & 8) == 8;
+};
+// -----------------------------------------------------------------------------
+Cell.prototype.getVisited = function() {
+  return (this.value & 16) == 16;
 };
 // -----------------------------------------------------------------------------
 Cell.prototype.setWallNorth = function(bool) {
@@ -87,10 +100,12 @@ Cell.prototype.setWallWest = function(bool) {
   }
 };
 // -----------------------------------------------------------------------------
-
-
-Cell.prototype.isVisited = function() {
-  return (this.value & 16) == 16;
+Cell.prototype.setVisited = function(bool) {
+  if (bool) {
+    this.value = this.value | 16;
+  } else {
+    this.value = this.value & 15;
+  }
 };
 // -----------------------------------------------------------------------------
 
@@ -183,8 +198,23 @@ Grid.prototype.getCandidatePaths = function(x, y) {
 
   let result = [];
   if (y > 0 ) {
-    if (!this.cell[x][y-1].wallNorth) {
+    if (!this.cell[x][y-1].getVisited()) {
       result.push('n');
+    }
+  }
+  if (x<(this.width-1)) {
+    if (!this.cell[x+1][y].getVisited()) {
+      result.push('e');
+    }
+  }
+  if (y < this.height-1 ) {
+    if (!this.cell[x][y+1].getVisited()) {
+      result.push('s');
+    }
+  }
+  if (x > 0) {
+    if (!this.cell[x-1][y].getVisited()) {
+      result.push('w');
     }
   }
   return result;
@@ -915,11 +945,33 @@ function buildImageCellWNE(cellSize, wallSize) {
 }
 // ----------------------------------------------------------------------------
 /**
+ * Builds images to be used in the grid.
+ * @param {*} cellSize size (pixels) of cell. both width and height
+ * @param {*} wallSize thickness of wall in cell in pixels
+ * @param {*} type denotes the type of cell to build. This is a number that in
+ * binary representation describes which walls to set and if cell is visited.
+ * Like this:
+ *  bit 1 - north wall set
+ *  bit 2 - east wall set
+ *  bit 3 - south wall set
+ *  bit 4 - west wall set
+ *  bit 5 - cell is visited
+ * So value of 21 means a cell with north and south walls set and is visited.
+ * Read up on binary numbers if you find this confusing
+ */
+function buildImgCell(cellSize, wallSize, type) { 
+  // find background color based on visited or not
+  // create cell with 4 corners.
+  // 
+}
+// ----------------------------------------------------------------------------
+/**
  * Build all images
  * @param {number} cellSize height and width in pixels of a cell.
  * @param {number} wallSize thickness of wall in each cell
 */
 function buildAllImages(cellSize, wallSize) {
+  console.log('building all images...');
   imgCell = buildImageCell(cellSize, wallSize);
   imgCellN = buildImageCellN(cellSize, wallSize);
   imgCellE = buildImageCellE(cellSize, wallSize);
@@ -960,16 +1012,29 @@ function buildAllImages(cellSize, wallSize) {
 function drawGrid() {
   let canvas = document.getElementById('myCanvas');
   let ctx = canvas.getContext('2d');
-  buildAllImages(cellSize, wallSize);
+  // buildAllImages(cellSize, wallSize);
   for (let y=0; y<rows; y++) {
     for (let x=0; x<columns; x++) {
-      let idx = myGrid.cell[x][y].value;
+      let idx = (myGrid.cell[x][y].value & 15);
       ctx.putImageData(images[idx], 10+(x*cellSize), 10+(y*cellSize));
     }
   }
-
-
-  /*
+}
+// ----------------------------------------------------------------------------
+/**
+ * @param {number} x x coordinate of cell.
+ * @param {number} y y coordinate of cell
+ * Draws cell on Canvas
+*/
+function drawCell(x, y) {
+  let canvas = document.getElementById('myCanvas');
+  let ctx = canvas.getContext('2d');
+  // buildAllImages(cellSize, wallSize);
+  let idx = (myGrid.cell[x][y].value & 15);
+  ctx.putImageData(images[idx], 10+(x*cellSize), 10+(y*cellSize));
+};
+// ----------------------------------------------------------------------------
+/*
   ctx.putImageData(images[0], 10, 10);
   ctx.putImageData(images[1], 60, 10);
   ctx.putImageData(images[2], 110, 10);
@@ -987,13 +1052,13 @@ function drawGrid() {
   ctx.putImageData(images[14], 110, 160);
   ctx.putImageData(images[15], 160, 160);
   */
-};
 // ############################################################################
 /**
  * To be called when page loads.
 */
 function onBodyLoad() { // eslint-disable-line no-unused-vars
   // open a small path
+  /*
   myGrid.cell[0][0].setWallEast(false);
   myGrid.cell[0][0].setWallSouth(false);
 
@@ -1018,18 +1083,118 @@ function onBodyLoad() { // eslint-disable-line no-unused-vars
   myGrid.cell[2][1].setWallSouth(false);
 
   myGrid.cell[2][2].setWallNorth(false);
-
+  */
   // myGrid.cell[0][0].visited = true;
-  console.log('North wall of top left cell: ' + myGrid.cell[0][0].wallNorth);
-  console.log(myGrid.toString());
-  console.log('Here is a unicode char: \u2501');
-  let paths = myGrid.getCandidatePaths(1, 1);
-  console.log(JSON.stringify(paths));
+  // console.log('North wall of top left cell: ' + myGrid.cell[0][0].wallNorth);
+  // console.log(myGrid.toString());
+  // console.log('Here is a unicode char: \u2501');
+  // let paths = myGrid.getCandidatePaths(1, 1);
+  // console.log(JSON.stringify(paths));
+  buildAllImages(cellSize, wallSize);
 
   drawGrid();
+};
+// ----------------------------------------------------------------------------
+/**
+ * progress crawler
+*/
+function evolve() { // eslint-disable-line no-unused-vars
+  // console.log('evolve was pressed');
+  moveTo(nextX, nextY);
 }
-// ############################################################################
-
+// ----------------------------------------------------------------------------
+/**
+ *
+ * @param {*} x x coordinate of cell
+ * @param {*} y y coordinate of cell
+ */
+function moveTo(x, y) {
+  // console.log('moving to: (' + x + ', ' + y + ')');
+  // mark as visited
+  myGrid.cell[x][y].setVisited(true);
+  // currentX = x;
+  // currentY = y;
+  // console.log('get candidate paths');
+  let paths = myGrid.getCandidatePaths(x, y);
+  // console.log('possible paths: ' + JSON.stringify(paths));
+  if (paths.length == 0) {
+    // handle dead end - pop from stack.
+    let returnCell = stack.pop();
+    console.log('going back to: (' + returnCell.x + ', ' + returnCell.y + ')');
+    nextX = returnCell.x;
+    nextY = returnCell.y;
+  } else {
+    let direction = '';
+    if (paths.length == 1) {
+      direction = paths[0];
+    } else {
+      // there must be more than one direction possible
+      stack.push({'x': x, 'y': y});
+      // now choose direction.
+      // console.log('Here is paths.length: ' + paths.length);
+      let idx = (Math.floor(Math.random() * paths.length));
+      // console.log('Here is idx: ' + idx);
+      direction = paths[idx];
+      // console.log('Direction chosen: ' + direction);
+    }
+    if (direction == 'n') {
+      // console.log('going north');
+      nextX = x;
+      nextY = y-1;
+      myGrid.cell[x][y].setWallNorth(false);
+      myGrid.cell[x][y-1].setWallSouth(false);
+      drawCell(x, y);
+      drawCell(x, y-1);
+    }
+    if (direction == 'e') {
+      // console.log('going east');
+      nextX = x+1;
+      nextY = y;
+      myGrid.cell[x][y].setWallEast(false);
+      myGrid.cell[x+1][y].setWallWest(false);
+      drawCell(x, y);
+      drawCell(x+1, y);
+    }
+    if (direction == 's') {
+      // console.log('going south');
+      nextX = x;
+      nextY = y+1;
+      myGrid.cell[x][y].setWallSouth(false);
+      myGrid.cell[x][y+1].setWallNorth(false);
+      drawCell(x, y);
+      drawCell(x, y+1);
+    }
+    if (direction == 'w') {
+      // console.log('going west');
+      nextX = x-1;
+      nextY = y;
+      myGrid.cell[x][y].setWallWest(false);
+      myGrid.cell[x-1][y].setWallEast(false);
+      drawCell(x, y);
+      drawCell(x-1, y);
+    }
+  }
+  // drawGrid();
+}
+// ----------------------------------------------------------------------------
+/**
+ *
+*/
+function startTimer() { // eslint-disable-line no-unused-vars
+  console.log('Starting Timer');
+  timerId = window.setInterval(function() {
+    evolve();
+  }, 1);
+}
+// ----------------------------------------------------------------------------
+/**
+ *
+*/
+function stopTimer() { // eslint-disable-line no-unused-vars
+  console.log('Stopping Timer');
+  window.clearInterval(timerId);
+}
+// ----------------------------------------------------------------------------
 console.log('testarea');
 console.log('logical 12 & 5: ' + (12 & 5));
 console.log('logical 12 | 5: ' + (12 | 5));
@@ -1039,33 +1204,5 @@ console.log('is north wall set? : ' + myCell.getWallNorth());
 console.log('is east wall set?  : ' + myCell.getWallEast());
 console.log('is south wall set? : ' + myCell.getWallSouth());
 console.log('is west wall set?  : ' + myCell.getWallWest());
-console.log('is cell visited?   : ' + myCell.isVisited());
-/*
-notes:
-
-   0
-  80
- 160
- 240
- 320
- 400
- 480
- 560
- 640
- 720
- 800
- 880
- 960
-1040
-1120
-1200
-1280
-1360
-1440
-1520
-
-wsen
-0001  north wall set
-0010  east wall set
-0101  north and south wall set
-*/
+console.log('is cell visited?   : ' + myCell.getVisited());
+// ----------------------------------------------------------------------------
