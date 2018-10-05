@@ -3,15 +3,16 @@
 console.log('Starting up Maze');
 
 let images = [];
-let cellSize = 10;
+let cellSize = 20;
 let wallSize = 1;
-let columns = 100;
-let rows = 60;
+let columns = 20;
+let rows = 10;
 let myGrid = new Grid(columns, rows);
 let nextX = 0;
 let nextY = 0;
 let stack = [];
 let timerId = 0;
+let mazeDone = false;
 
 // ############################################################################
 /**
@@ -219,7 +220,7 @@ Grid.prototype.getCandidatePaths = function(x, y) {
  *  bit 3 - south wall set
  *  bit 4 - west wall set
  *  bit 5 - cell is visited
- *  bit 6 - cell pushed on stack
+ *  bit 6 - cell is pushed on stack
  * So value of 21 means a cell with north and south walls set and is visited.
  * Read up on binary numbers if you find this confusing
  * @return {object} imgageData
@@ -371,7 +372,11 @@ function onBodyLoad() { // eslint-disable-line no-unused-vars
 */
 function evolve() { // eslint-disable-line no-unused-vars
   // console.log('evolve was pressed');
-  moveTo(nextX, nextY);
+  if (!mazeDone) {
+    moveTo(nextX, nextY);
+  } else {
+    stopTimer();
+  }
 }
 // ----------------------------------------------------------------------------
 /**
@@ -389,13 +394,16 @@ function moveTo(x, y) {
   let paths = myGrid.getCandidatePaths(x, y);
   // console.log('possible paths: ' + JSON.stringify(paths));
   if (paths.length == 0) {
-    // handle dead end - pop from stack.
     drawCell(x, y); // redraw now that it is marked as visited
-    let returnCell = stack.pop();
-    console.log('going back to: (' + returnCell.x + ', ' + returnCell.y + ')');
-    nextX = returnCell.x;
-    nextY = returnCell.y;
-    myGrid.cell[nextX][nextY].setPushed(false);
+    // handle dead end - pop from stack.
+    if (stack.length > 0) {
+      let returnCell = stack.pop();
+      nextX = returnCell.x;
+      nextY = returnCell.y;
+      myGrid.cell[nextX][nextY].setPushed(false);
+    } else {
+      mazeDone = true;
+    }
   } else {
     let direction = '';
     if (paths.length == 1) {
@@ -459,6 +467,8 @@ function startTimer() { // eslint-disable-line no-unused-vars
   timerId = window.setInterval(function() {
     evolve();
   }, 60);
+  document.getElementById('btnStart').disabled = true;
+  document.getElementById('btnStop').disabled = false;
 }
 // ----------------------------------------------------------------------------
 /**
@@ -467,6 +477,10 @@ function startTimer() { // eslint-disable-line no-unused-vars
 function stopTimer() { // eslint-disable-line no-unused-vars
   console.log('Stopping Timer');
   window.clearInterval(timerId);
+  if (!mazeDone) {
+    document.getElementById('btnStart').disabled = false;
+  }
+  document.getElementById('btnStop').disabled = true;
 }
 // ----------------------------------------------------------------------------
 console.log('testarea');
