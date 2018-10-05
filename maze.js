@@ -3,21 +3,14 @@
 console.log('Starting up Maze');
 
 let images = [];
-
 let cellSize = 10;
 let wallSize = 1;
 let columns = 100;
 let rows = 60;
-
 let myGrid = new Grid(columns, rows);
-
-// let currentX = 0;
-// let currentY = 0;
 let nextX = 0;
 let nextY = 0;
-
 let stack = [];
-
 let timerId = 0;
 
 // ############################################################################
@@ -51,11 +44,15 @@ Cell.prototype.getVisited = function() {
   return (this.value & 16) == 16;
 };
 // -----------------------------------------------------------------------------
+Cell.prototype.getPushed = function() {
+  return (this.value & 32) == 16;
+};
+// -----------------------------------------------------------------------------
 Cell.prototype.setWallNorth = function(bool) {
   if (bool) {
     this.value = this.value | 1;
   } else {
-    this.value = this.value & 30;
+    this.value = this.value & 62;
   }
 };
 // -----------------------------------------------------------------------------
@@ -63,7 +60,7 @@ Cell.prototype.setWallEast = function(bool) {
   if (bool) {
     this.value = this.value | 2;
   } else {
-    this.value = this.value & 29;
+    this.value = this.value & 61;
   }
 };
 // -----------------------------------------------------------------------------
@@ -71,7 +68,7 @@ Cell.prototype.setWallSouth = function(bool) {
   if (bool) {
     this.value = this.value | 4;
   } else {
-    this.value = this.value & 27;
+    this.value = this.value & 59;
   }
 };
 // -----------------------------------------------------------------------------
@@ -79,7 +76,7 @@ Cell.prototype.setWallWest = function(bool) {
   if (bool) {
     this.value = this.value | 8;
   } else {
-    this.value = this.value & 23;
+    this.value = this.value & 55;
   }
 };
 // -----------------------------------------------------------------------------
@@ -87,10 +84,17 @@ Cell.prototype.setVisited = function(bool) {
   if (bool) {
     this.value = this.value | 16;
   } else {
-    this.value = this.value & 15;
+    this.value = this.value & 47;
   }
 };
 // -----------------------------------------------------------------------------
+Cell.prototype.setPushed = function(bool) {
+  if (bool) {
+    this.value = this.value | 32;
+  } else {
+    this.value = this.value & 31;
+  }
+};
 
 // ############################################################################
 /**
@@ -215,6 +219,7 @@ Grid.prototype.getCandidatePaths = function(x, y) {
  *  bit 3 - south wall set
  *  bit 4 - west wall set
  *  bit 5 - cell is visited
+ *  bit 6 - cell pushed on stack
  * So value of 21 means a cell with north and south walls set and is visited.
  * Read up on binary numbers if you find this confusing
  * @return {object} imgageData
@@ -224,11 +229,15 @@ function buildImgCell(cellSize, wallSize, type) {
   let backRed = 190;
   let backGreen = 190;
   let backBlue = 255;
-  if ((type & 16) == 16) {
-    // if the cell is visited, use white as background
+  if ((type & 16) == 16) { // if the cell is visited, use white as background
     backRed = 255;
     backGreen = 255;
     backBlue = 255;
+  }
+  if ((type & 32) == 32) { // if the cell is pushed on stack use red
+    backRed = 255;
+    backGreen = 190;
+    backBlue = 190;
   }
   let canvas = document.getElementById('myCanvas');
   let ctx = canvas.getContext('2d');
@@ -316,7 +325,7 @@ function buildImgCell(cellSize, wallSize, type) {
 */
 function buildAllImages(cellSize, wallSize) {
   console.log('building all images...');
-  for (let i=0; i<32; i++) {
+  for (let i=0; i<64; i++) {
     images.push(buildImgCell(cellSize, wallSize, i));
   }
 }
@@ -327,7 +336,6 @@ function buildAllImages(cellSize, wallSize) {
 function drawGrid() {
   let canvas = document.getElementById('myCanvas');
   let ctx = canvas.getContext('2d');
-  // buildAllImages(cellSize, wallSize);
   for (let y=0; y<rows; y++) {
     for (let x=0; x<columns; x++) {
       let idx = (myGrid.cell[x][y].value & 15);
@@ -387,13 +395,16 @@ function moveTo(x, y) {
     console.log('going back to: (' + returnCell.x + ', ' + returnCell.y + ')');
     nextX = returnCell.x;
     nextY = returnCell.y;
+    myGrid.cell[nextX][nextY].setPushed(false);
   } else {
     let direction = '';
     if (paths.length == 1) {
       direction = paths[0];
     } else {
       // there must be more than one direction possible
+      myGrid.cell[x][y].setPushed(true);
       stack.push({'x': x, 'y': y});
+      drawCell(x, y);
       // now choose direction.
       // console.log('Here is paths.length: ' + paths.length);
       let idx = (Math.floor(Math.random() * paths.length));
@@ -447,7 +458,7 @@ function startTimer() { // eslint-disable-line no-unused-vars
   console.log('Starting Timer');
   timerId = window.setInterval(function() {
     evolve();
-  }, 1);
+  }, 60);
 }
 // ----------------------------------------------------------------------------
 /**
