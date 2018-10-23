@@ -1,12 +1,13 @@
 'use strict';
+import {Grid} from './grid.js';
 
 console.log('Starting up Maze');
 
 let images = [];
-let cellSize = 20;
+let cellSize = 10;
 let wallSize = 1;
-let columns = 20;
-let rows = 10;
+let columns = 100;
+let rows = 60;
 let myGrid = new Grid(columns, rows);
 let nextX = 0;
 let nextY = 0;
@@ -14,199 +15,6 @@ let stack = [];
 let timerId = 0;
 let mazeDone = false;
 
-// ############################################################################
-/**
- * A class to represent a cell in the grid
- * @class
- *
- * @constructor
- */
-function Cell() {
-  this.value = 15; // all walls - not visited
-};
-// -----------------------------------------------------------------------------
-Cell.prototype.getWallNorth = function() {
-  return (this.value & 1) == 1;
-};
-// -----------------------------------------------------------------------------
-Cell.prototype.getWallEast = function() {
-  return (this.value & 2) == 2;
-};
-// -----------------------------------------------------------------------------
-Cell.prototype.getWallSouth = function() {
-  return (this.value & 4) == 4;
-};
-// -----------------------------------------------------------------------------
-Cell.prototype.getWallWest = function() {
-  return (this.value & 8) == 8;
-};
-// -----------------------------------------------------------------------------
-Cell.prototype.getVisited = function() {
-  return (this.value & 16) == 16;
-};
-// -----------------------------------------------------------------------------
-Cell.prototype.getPushed = function() {
-  return (this.value & 32) == 16;
-};
-// -----------------------------------------------------------------------------
-Cell.prototype.setWallNorth = function(bool) {
-  if (bool) {
-    this.value = this.value | 1;
-  } else {
-    this.value = this.value & 62;
-  }
-};
-// -----------------------------------------------------------------------------
-Cell.prototype.setWallEast = function(bool) {
-  if (bool) {
-    this.value = this.value | 2;
-  } else {
-    this.value = this.value & 61;
-  }
-};
-// -----------------------------------------------------------------------------
-Cell.prototype.setWallSouth = function(bool) {
-  if (bool) {
-    this.value = this.value | 4;
-  } else {
-    this.value = this.value & 59;
-  }
-};
-// -----------------------------------------------------------------------------
-Cell.prototype.setWallWest = function(bool) {
-  if (bool) {
-    this.value = this.value | 8;
-  } else {
-    this.value = this.value & 55;
-  }
-};
-// -----------------------------------------------------------------------------
-Cell.prototype.setVisited = function(bool) {
-  if (bool) {
-    this.value = this.value | 16;
-  } else {
-    this.value = this.value & 47;
-  }
-};
-// -----------------------------------------------------------------------------
-Cell.prototype.setPushed = function(bool) {
-  if (bool) {
-    this.value = this.value | 32;
-  } else {
-    this.value = this.value & 31;
-  }
-};
-
-// ############################################################################
-/**
- * a class to represent a grid of cells
- * @class
- * @constructor
- * @param {*} width width of the grid
- * @param {*} height height of the grid
- */
-function Grid(width, height) {
-  this.width = width;
-  this.height = height;
-
-  this.cell = new Array(width);
-  for (let c = 0; c < width; c++) {
-    this.cell[c] = new Array(height);
-    for (let r = 0; r < height; r++) {
-      this.cell[c][r] = new Cell();
-    }
-  }
-};
-// -----------------------------------------------------------------------------
-Grid.prototype.toString = function() {
-  let result = '';
-  for (let r = 0; r < this.height; r++) {
-    // draw north walls
-    for (let c = 0; c < this.width; c++) {
-      if (this.cell[c][r].wallNorth) {
-        result += '+---+';
-      } else {
-        result += '+   +';
-      }
-    }
-    result += '\n';
-    // draw west, visited and and east
-    for (let c = 0; c < this.width; c++) {
-      // draw west
-      if (this.cell[c][r].wallWest) {
-        result += '| ';
-      } else {
-        result += '  ';
-      }
-      // draw visited
-      if (this.cell[c][r].visited) {
-        result += 'V';
-      } else {
-        result += ' ';
-      }
-      // draw east
-      if (this.cell[c][r].wallEast) {
-        result += ' |';
-      } else {
-        result += '  ';
-      }
-    }
-    result += '\n';
-    // draw south walls
-    for (let c = 0; c < this.width; c++) {
-      if (this.cell[c][r].wallSouth) {
-        result += '+---+';
-      } else {
-        result += '+   +';
-      }
-    }
-    result += '\n';
-  }
-  return result;
-};
-
-// -----------------------------------------------------------------------------
-/**
- *
- * @param {number} x x-coordinate on the grid for cell to find paths for
- * @param {number} y y-coordinate on the grid for cell to find paths for
- * @return {array} array of chars 'n', 'e', 's', 'w', denoting possible paths
- * for cell.
- */
-Grid.prototype.getCandidatePaths = function(x, y) {
-  // Parameter validation
-  if (isNaN(x) || isNaN(y)) {
-    throw new Error('Parameter is not a number!');
-  }
-  if (x<0 || x>=this.width || y<0 || y >= this.height) {
-    let errMsg = '(x,y) cords: (' + x + ', ' + y + ') supplied in params' +
-      ' is outside the grid';
-    throw new RangeError(errMsg);
-  }
-
-  let result = [];
-  if (y > 0 ) {
-    if (!this.cell[x][y-1].getVisited()) {
-      result.push('n');
-    }
-  }
-  if (x<(this.width-1)) {
-    if (!this.cell[x+1][y].getVisited()) {
-      result.push('e');
-    }
-  }
-  if (y < this.height-1 ) {
-    if (!this.cell[x][y+1].getVisited()) {
-      result.push('s');
-    }
-  }
-  if (x > 0) {
-    if (!this.cell[x-1][y].getVisited()) {
-      result.push('w');
-    }
-  }
-  return result;
-};
 // ----------------------------------------------------------------------------
 /**
  * Builds images to be used in the grid.
@@ -466,7 +274,7 @@ function startTimer() { // eslint-disable-line no-unused-vars
   console.log('Starting Timer');
   timerId = window.setInterval(function() {
     evolve();
-  }, 60);
+  }, 1);
   document.getElementById('btnStart').disabled = true;
   document.getElementById('btnStop').disabled = false;
 }
@@ -483,14 +291,5 @@ function stopTimer() { // eslint-disable-line no-unused-vars
   document.getElementById('btnStop').disabled = true;
 }
 // ----------------------------------------------------------------------------
-console.log('testarea');
-console.log('logical 12 & 5: ' + (12 & 5));
-console.log('logical 12 | 5: ' + (12 | 5));
 
-let myCell = new Cell();
-console.log('is north wall set? : ' + myCell.getWallNorth());
-console.log('is east wall set?  : ' + myCell.getWallEast());
-console.log('is south wall set? : ' + myCell.getWallSouth());
-console.log('is west wall set?  : ' + myCell.getWallWest());
-console.log('is cell visited?   : ' + myCell.getVisited());
-// ----------------------------------------------------------------------------
+export {onBodyLoad, startTimer, stopTimer, evolve};
