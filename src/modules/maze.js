@@ -276,6 +276,7 @@ function startTimer() { // eslint-disable-line no-unused-vars
     evolve();
   }, 1);
   document.getElementById('btnStart').disabled = true;
+  document.getElementById('btnEvolve').disabled = true;
   document.getElementById('btnStop').disabled = false;
 }
 // ----------------------------------------------------------------------------
@@ -287,6 +288,7 @@ function stopTimer() { // eslint-disable-line no-unused-vars
   window.clearInterval(timerId);
   if (!mazeDone) {
     document.getElementById('btnStart').disabled = false;
+    document.getElementById('btnEvolve').disabled = false;
   }
   document.getElementById('btnStop').disabled = true;
 }

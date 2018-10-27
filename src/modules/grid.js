@@ -27,7 +27,7 @@ Grid.prototype.toString = function() {
   for (let r = 0; r < this.height; r++) {
     // draw north walls
     for (let c = 0; c < this.width; c++) {
-      if (this.cell[c][r].wallNorth) {
+      if (this.cell[c][r].getWallNorth()) {
         result += '+---+';
       } else {
         result += '+   +';
