@@ -1,5 +1,5 @@
-let cells = require('./cell.js');
-let Cell = cells.Cell;
+const cells = require('./cell.js');
+const Cell = cells.Cell;
 
 // ############################################################################
 /**
@@ -83,12 +83,12 @@ Grid.prototype.getCandidatePaths = function(x, y) {
     throw new Error('Parameter is not a number!');
   }
   if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
-    let errMsg = '(x,y) cords: (' + x + ', ' + y + ') supplied in params' +
+    const errMsg = '(x,y) cords: (' + x + ', ' + y + ') supplied in params' +
       ' is outside the grid';
     throw new RangeError(errMsg);
   }
 
-  let result = [];
+  const result = [];
   if (y > 0) {
     if (!this.cell[x][y - 1].getVisited()) {
       result.push('n');

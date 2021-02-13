@@ -16,7 +16,7 @@ const Cell = require('./cell').Cell;
 
 describe('Class Cell tests', () => {
   it('provide value 1 to cell and check that only wall north is set', () => {
-    let c = new Cell();
+    const c = new Cell();
     c.value = 1;
     expect(c.getWallNorth()).to.equal(true);
     expect(c.getWallEast()).to.equal(false);
@@ -27,7 +27,7 @@ describe('Class Cell tests', () => {
   });
   it('provide value 58 to cell and check that all get-functions ' +
       'return as expected', () => {
-    let c = new Cell();
+    const c = new Cell();
     c.value = 58;
     expect(c.getWallNorth()).to.equal(false);
     expect(c.getWallEast()).to.equal(true);
@@ -38,7 +38,7 @@ describe('Class Cell tests', () => {
   });
   it('Create new cell. Check value is 15 and that all get-functions ' +
       'return as expected', () => {
-    let c = new Cell();
+    const c = new Cell();
     expect(c.value).to.equal(15);
     expect(c.getWallNorth()).to.equal(true);
     expect(c.getWallEast()).to.equal(true);

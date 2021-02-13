@@ -3,15 +3,15 @@ import {Grid} from './grid.js';
 
 console.log('Starting up Maze');
 
-let images = [];
-let cellSize = 10;
-let wallSize = 1;
-let columns = 100;
-let rows = 60;
-let myGrid = new Grid(columns, rows);
+const images = [];
+const cellSize = 10;
+const wallSize = 1;
+const columns = 100;
+const rows = 60;
+const myGrid = new Grid(columns, rows);
+const stack = [];
 let nextX = 0;
 let nextY = 0;
-let stack = [];
 let timerId = 0;
 let mazeDone = false;
 
@@ -48,9 +48,9 @@ function buildImgCell(cellSize, wallSize, type) {
     backGreen = 190;
     backBlue = 190;
   }
-  let canvas = document.getElementById('myCanvas');
-  let ctx = canvas.getContext('2d');
-  let result = ctx.createImageData(cellSize, cellSize);
+  const canvas = document.getElementById('myCanvas');
+  const ctx = canvas.getContext('2d');
+  const result = ctx.createImageData(cellSize, cellSize);
   // fill white
   for (let i=0; i<result.data.length; i+=4) {
     result.data[i+0]=backRed;
@@ -58,7 +58,7 @@ function buildImgCell(cellSize, wallSize, type) {
     result.data[i+2]=backBlue;
     result.data[i+3]=255;
   }
-  let k = cellSize-wallSize; // will be used a lot below
+  const k = cellSize-wallSize; // will be used a lot below
   // do corners
   for (let i=0; i<wallSize; i++ ) {
     for (let j=0; j<wallSize; j++ ) {
@@ -143,11 +143,11 @@ function buildAllImages(cellSize, wallSize) {
  * Draws grid on Canvas
  */
 function drawGrid() {
-  let canvas = document.getElementById('myCanvas');
-  let ctx = canvas.getContext('2d');
+  const canvas = document.getElementById('myCanvas');
+  const ctx = canvas.getContext('2d');
   for (let y=0; y<rows; y++) {
     for (let x=0; x<columns; x++) {
-      let idx = (myGrid.cell[x][y].value & 15);
+      const idx = (myGrid.cell[x][y].value & 15);
       ctx.putImageData(images[idx], 10+(x*cellSize), 10+(y*cellSize));
     }
   }
@@ -159,10 +159,10 @@ function drawGrid() {
  * Draws cell on Canvas
 */
 function drawCell(x, y) {
-  let canvas = document.getElementById('myCanvas');
-  let ctx = canvas.getContext('2d');
+  const canvas = document.getElementById('myCanvas');
+  const ctx = canvas.getContext('2d');
   // buildAllImages(cellSize, wallSize);
-  let idx = (myGrid.cell[x][y].value);
+  const idx = (myGrid.cell[x][y].value);
   ctx.putImageData(images[idx], 10+(x*cellSize), 10+(y*cellSize));
 };
 // ----------------------------------------------------------------------------
@@ -199,13 +199,13 @@ function moveTo(x, y) {
   // currentX = x;
   // currentY = y;
   // console.log('get candidate paths');
-  let paths = myGrid.getCandidatePaths(x, y);
+  const paths = myGrid.getCandidatePaths(x, y);
   // console.log('possible paths: ' + JSON.stringify(paths));
   if (paths.length == 0) {
     drawCell(x, y); // redraw now that it is marked as visited
     // handle dead end - pop from stack.
     if (stack.length > 0) {
-      let returnCell = stack.pop();
+      const returnCell = stack.pop();
       nextX = returnCell.x;
       nextY = returnCell.y;
       myGrid.cell[nextX][nextY].setPushed(false);
@@ -223,7 +223,7 @@ function moveTo(x, y) {
       drawCell(x, y);
       // now choose direction.
       // console.log('Here is paths.length: ' + paths.length);
-      let idx = (Math.floor(Math.random() * paths.length));
+      const idx = (Math.floor(Math.random() * paths.length));
       // console.log('Here is idx: ' + idx);
       direction = paths[idx];
       // console.log('Direction chosen: ' + direction);
