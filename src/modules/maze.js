@@ -31,7 +31,7 @@ let mazeDone = false;
  *  bit 6 - cell is pushed on stack
  * So value of 21 means a cell with north and south walls set and is visited.
  * Read up on binary numbers if you find this confusing
- * @return {object} imgageData
+ * @return {object} imageData
  */
 function buildImgCell(cellSize, wallSize, type) {
   // find background color based on visited or not - default to white
